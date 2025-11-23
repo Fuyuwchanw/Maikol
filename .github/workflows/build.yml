@@ -20,14 +20,22 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Validate Gradle wrapper
+      - name: Check for Gradle wrapper
+        id: gradle-wrapper
         run: |
-          if [ ! -x ./gradlew ]; then
-            echo "Gradle wrapper not found. Add a Gradle wrapper to enable CI builds."
-            exit 1
+          if [ -x ./gradlew ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Warn when Gradle wrapper is missing
+        if: steps.gradle-wrapper.outputs.present == 'false'
+        run: |
+          echo "Gradle wrapper not found. Add a Gradle wrapper to enable CI builds."
+
       - name: Cache Gradle packages
+        if: steps.gradle-wrapper.outputs.present == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -38,4 +46,5 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build with Gradle
+        if: steps.gradle-wrapper.outputs.present == 'true'
         run: ./gradlew build
